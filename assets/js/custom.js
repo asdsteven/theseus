@@ -10,5 +10,5 @@
  * To register a constrol simmessages, use addSimMessageHandler
  */
 addSimMessageHandler("theseus", (data) => {
-    console.log(data);
+    window.open(data, "_blank");
 });
