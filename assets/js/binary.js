@@ -1,5 +1,5 @@
-// meta={"simUrl":"https://trg-arcade.userpxt.io/v1.6.24/---simulator","cdnUrl":"https://pxt.azureedge.net","version":"0.0.2","target":"arcade","targetVersion":"1.6.24","repo":"asdsteven/theseus"}
-// total=1177610 new=5.53% cached=88.91% other=5.55%
+// meta={"simUrl":"https://trg-arcade.userpxt.io/v1.6.24/---simulator","cdnUrl":"https://pxt.azureedge.net","version":"0.0.3","target":"arcade","targetVersion":"1.6.24","repo":"asdsteven/theseus"}
+// total=1177614 new=5.53% cached=88.91% other=5.55%
 (function (ectx) {
 'use strict';
 const runtime = ectx.runtime;
@@ -392,7 +392,7 @@ const pxsim_pxtrt = pxsim.pxtrt;
 const pxsim_numops = pxsim.numops;
 
 
-function _main___P171655(s) {
+function _main___P171754(s) {
 let r0 = s.r0, step = s.pc;
 s.pc = -1;
 
@@ -741,7 +741,7 @@ switch (step) {
     s.tmp_0 = controller_Button_onEvent__P156597_mk(s);
     s.tmp_0.arg0 = globals.A___156524;
     s.tmp_0.arg1 = 2049;
-    s.tmp_0.arg2 = inline__P171249;
+    s.tmp_0.arg2 = inline__P171723;
     s.callLocIdx = 50; s.pc = 31; return s.tmp_0;
   case 31:
     r0 = s.retval;
@@ -749,13 +749,13 @@ switch (step) {
     return leave(s, r0)
   default: oops()
 } } }
-_main___P171655.info = {"start":0,"length":0,"line":0,"column":0,"endLine":0,"endColumn":0,"fileName":"main.ts","functionName":"<main>","argumentNames":[]}
-_main___P171655.continuations = [  ]
+_main___P171754.info = {"start":0,"length":0,"line":0,"column":0,"endLine":0,"endColumn":0,"fileName":"main.ts","functionName":"<main>","argumentNames":[]}
+_main___P171754.continuations = [  ]
 
-function _main___P171655_mk(s) {
+function _main___P171754_mk(s) {
     checkStack(s.depth);
     return {
-        parent: s, fn: _main___P171655, depth: s.depth + 1,
+        parent: s, fn: _main___P171754, depth: s.depth + 1,
         pc: 0, retval: undefined, r0: undefined, overwrittenPC: false, lambdaArgs: null,
   tmp_0: undefined,
   tmp_1: undefined,
@@ -1044,7 +1044,7 @@ function info_inline__P158799_mk(s) {
 
 
 
-function inline__P171249(s) {
+function inline__P171723(s) {
 let r0 = s.r0, step = s.pc;
 s.pc = -1;
 
@@ -1068,17 +1068,17 @@ switch (step) {
     s.tmp_2 = r0;
     r0 = pxsim.control.createBufferFromUTF8(s.tmp_2);
     s.tmp_1 = r0;
-    r0 = pxsim_pxtcore.sendMessage("web", s.tmp_1, undefined);
+    r0 = pxsim_pxtcore.sendMessage("theseus", s.tmp_1, undefined);
     r0 = undefined;
     return leave(s, r0)
   default: oops()
 } } }
-inline__P171249.info = {"start":52,"length":118,"line":0,"column":52,"endLine":2,"endColumn":1,"fileName":"main.ts","functionName":"inline","argumentNames":[]}
+inline__P171723.info = {"start":52,"length":122,"line":0,"column":52,"endLine":2,"endColumn":1,"fileName":"main.ts","functionName":"inline","argumentNames":[]}
 
-function inline__P171249_mk(s) {
+function inline__P171723_mk(s) {
     checkStack(s.depth);
     return {
-        parent: s, fn: inline__P171249, depth: s.depth + 1,
+        parent: s, fn: inline__P171723, depth: s.depth + 1,
         pc: 0, retval: undefined, r0: undefined, overwrittenPC: false, lambdaArgs: null,
   tmp_0: undefined,
   tmp_1: undefined,
@@ -39717,5 +39717,5 @@ const sprites_BaseSpriteSayRenderer__C156647_VT = mkVTable({
 
 const breakpoints = setupDebugger(1, [])
 
-return _main___P171655
+return _main___P171754
 })
