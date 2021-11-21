@@ -23,7 +23,8 @@ const hero = {
     frame: 0,
     durations: {
         gait: 100,
-        move: 1000
+        move: 1000,
+        bounce: 200
     },
     sprite: null as Sprite,
     sprites: [
@@ -251,6 +252,7 @@ const snake = {
     durations: {
         gait: 100,
         move: 1000,
+        bounce: 200,
         rest: 200,
         bite: 200,
         bites: 30000
@@ -419,7 +421,8 @@ const state = {
     snake: null as any,
     duration: 0,
     progress: 0,
-    runtime: 0
+    runtime: 0,
+    tilemap: [] as number[][]
 }
 game.onUpdateInterval(30, function () {
     const dt = game.runtime() - state.runtime
@@ -443,6 +446,21 @@ game.onUpdateInterval(30, function () {
         const frames = [0, 1, 0, 2]
         hero.sprite.setImage(hero.sprites[hero.frame + frames[Math.floor(state.progress / hero.durations.gait) % 4]])
         hero.sprite.setPosition((f(state.hero.col, hero.col) + 0.5) * u, (f(state.hero.row, hero.row) + 0.5) * u)
+        if (hero.row < 0 || hero.row >= templateMap.height || hero.col < 0 || hero.col >= templateMap.width || state.tilemap[hero.row][hero.col] >= 9) {
+            if (state.progress > hero.durations.bounce) {
+                hero.row = state.hero.row
+                hero.col = state.hero.col
+                hero.sprite.setPosition((f(state.hero.col, hero.col) + 0.5) * u, (f(state.hero.row, hero.row) + 0.5) * u)
+                state.n = 0
+                return
+            }
+        }
+        if (hero.col == treasure.col && hero.row == treasure.row) {
+            if (state.progress > hero.durations.bounce) {
+                state.n = 10
+                return
+            }
+        }
         if (state.progress == state.duration) {
             hero.sprite.setImage(hero.sprites[hero.frame])
             state.n++
@@ -456,7 +474,13 @@ game.onUpdateInterval(30, function () {
         state.progress = 0
         const dc = d1(snake.col, hero.col)
         const dr = d1(snake.row, hero.row)
-        if (dc) {
+        if (dc && state.tilemap[snake.row][snake.col + dc] < 9) {
+            snake.col += dc
+            state.n++
+        } else if (dr && state.tilemap[snake.row + dr][snake.col] < 9) {
+            snake.row += dr
+            state.n++
+        } else if (dc) {
             snake.col += dc
             state.n++
         } else if (dr) {
@@ -470,6 +494,15 @@ game.onUpdateInterval(30, function () {
     } else if (state.n == 3 || state.n == 7) {
         snake.sprite.setImage(snake.sprites[Math.floor(state.progress / snake.durations.gait) % 2])
         snake.sprite.setPosition((f(state.snake.col, snake.col) + 0.5) * u, (f(state.snake.row, snake.row) + 0.5) * u)
+        if (state.tilemap[snake.row][snake.col] >= 9) {
+            if (state.progress > snake.durations.bounce) {
+                snake.row = state.snake.row
+                snake.col = state.snake.col
+                snake.sprite.setPosition((f(state.snake.col, snake.col) + 0.5) * u, (f(state.snake.row, snake.row) + 0.5) * u)
+                state.n++
+                return
+            }
+        }
         if (state.progress == state.duration) {
             snake.sprite.setImage(snake.sprites[0])
             state.n++
@@ -484,7 +517,7 @@ game.onUpdateInterval(30, function () {
         }
     } else if (state.n == 8) {
         if (snake.col == hero.col && snake.row == hero.row) {
-            state.duration = snake.durations.move
+            state.duration = snake.durations.bites
             state.progress = 0
             state.n++
         } else {
@@ -493,6 +526,8 @@ game.onUpdateInterval(30, function () {
     } else if (state.n == 9) {
         const frames = [2, 3, 3, 4, 5, 5, 5, 5]
         snake.sprite.setImage(snake.sprites[frames[Math.floor(state.progress / snake.durations.bite) % 8]])
+    } else if (state.n == 10) {
+        treasure.sprite.setImage(treasure.sprites[1])
     }
 })
 const move = (col: number, row: number, frame: number) => {
@@ -527,7 +562,7 @@ interface Tile {
     row: number,
     castle: number
 }
-const grassEdges = (tileList: Tile[]) => {
+const tileListToMap = (tileList: Tile[]) => {
     const m = []
     for (let row = 0; row < templateMap.height; row++) {
         const l = []
@@ -539,6 +574,9 @@ const grassEdges = (tileList: Tile[]) => {
     for (const tile of tileList) {
         m[tile.row][tile.col] = tile.castle
     }
+    return m
+}
+const grassEdges = (tileList: Tile[]) => {
     const surrounds: any = {
         '0011': 0,
         '0010': 1,
@@ -558,7 +596,7 @@ const grassEdges = (tileList: Tile[]) => {
             for (let d = 0; d < 4; d++) {
                 const r = row + dr[d]
                 const c = col + dc[d]
-                if (0 <= r && r < templateMap.height && 0 <= c && c < templateMap.width && m[r][c] >= 9) {
+                if (0 <= r && r < templateMap.height && 0 <= c && c < templateMap.width && state.tilemap[r][c] >= 9) {
                     s += '1'
                 } else {
                     s += '0'
@@ -578,6 +616,7 @@ const cmds: any = {
         game.splash(s)
     },
     setScene: (args: any) => {
+        state.tilemap = tileListToMap(args.tiles)
         tiles.setTilemap(templateMap)
         for (const tile of grassEdges(args.tiles) as Tile[]) {
             tiles.setTileAt(tiles.getTileLocation(tile.col, tile.row), castles[tile.castle])
@@ -619,10 +658,11 @@ cmds.setScene({
     ],
     hero: {
         col: 5,
-        row: 0,
+        row: 2,
         durations: {
             gait: 100,
-            move: 1000
+            move: 1000,
+            bounce: 200
         }
     },
     snake: {
@@ -630,14 +670,15 @@ cmds.setScene({
         row: 1,
         durations: {
             gait: 100,
-            move: 1000,
+            move: 600,
+            bounce: 150,
             rest: 200,
             bite: 200,
             bites: 30000
         }
     },
     treasure: {
-        col: 1,
+        col: 9,
         row: 0
     }
 })
