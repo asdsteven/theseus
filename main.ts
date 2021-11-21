@@ -1,3 +1,4 @@
+const templateMap = tilemap`template`
 const channel = {
     s: "theseus",
     post: (o: Object) => control.simmessages.send(channel.s, Buffer.fromUTF8(JSON.stringify(o)))
@@ -521,21 +522,64 @@ controller.player1.onButtonEvent(ControllerButton.Up, ControllerButtonEvent.Pres
 controller.player1.onButtonEvent(ControllerButton.Left, ControllerButtonEvent.Pressed, function () {
     move(-1, 0, 9)
 })
-interface StringToAny {
-    [key: string]: any
-}
 interface Tile {
     col: number,
     row: number,
     castle: number
 }
-const cmds: StringToAny = {
+const grassEdges = (tileList: Tile[]) => {
+    const m = []
+    for (let row = 0; row < templateMap.height; row++) {
+        const l = []
+        for (let col = 0; col < templateMap.width; col++) {
+            l.push(-1)
+        }
+        m.push(l)
+    }
+    for (const tile of tileList) {
+        m[tile.row][tile.col] = tile.castle
+    }
+    const surrounds: any = {
+        '0011': 0,
+        '0010': 1,
+        '0110': 2,
+        '0001': 3,
+        '0100': 5,
+        '1001': 6,
+        '1000': 7,
+        '1100': 8
+    }
+    const dr = [1, 0, -1, 0]
+    const dc = [0, 1, 0, -1]
+    const list = []
+    for (let row = 0; row < templateMap.height; row++) { 
+        for (let col = 0; col < templateMap.width; col++) {
+            let s = ''
+            for (let d = 0; d < 4; d++) {
+                const r = row + dr[d]
+                const c = col + dc[d]
+                if (0 <= r && r < templateMap.height && 0 <= c && c < templateMap.width && m[r][c] >= 9) {
+                    s += '1'
+                } else {
+                    s += '0'
+                }
+            }
+            list.push({
+                col: col,
+                row: row,
+                castle: surrounds[s]
+            })
+        }
+    }
+    return tileList.concat(list)
+}
+const cmds: any = {
     splash: (s: string) => {
         game.splash(s)
     },
     setScene: (args: any) => {
-        tiles.setTilemap(tilemap`template`)
-        for (const tile of args.tiles as Tile[]) {
+        tiles.setTilemap(templateMap)
+        for (const tile of grassEdges(args.tiles) as Tile[]) {
             tiles.setTileAt(tiles.getTileLocation(tile.col, tile.row), castles[tile.castle])
         }
         hero.col = args.hero.col
@@ -546,6 +590,7 @@ const cmds: StringToAny = {
         snake.durations = args.snake.durations
         treasure.col = args.treasure.col
         treasure.row = args.treasure.row
+        state.n = 0
         const u = scene.screenWidth() / 10
         hero.sprite.setPosition((hero.col + 0.5) * u, (hero.row + 0.5) * u)
         snake.sprite.setPosition((snake.col + 0.5) * u, (snake.row + 0.5) * u)
@@ -560,8 +605,18 @@ control.simmessages.onReceived(channel.s, (buffer: Buffer) => {
     }
 })
 cmds.setScene({
-    tiles: [],
-    walls: [],
+    tiles: [
+        {
+            col: 3,
+            row: 3,
+            castle: 9
+        },
+        {
+            col: 4,
+            row: 2,
+            castle: 10
+        }
+    ],
     hero: {
         col: 5,
         row: 0,
