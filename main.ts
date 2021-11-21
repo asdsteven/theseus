@@ -1,4 +1,8 @@
-let castles = [
+const channel = {
+    s: "theseus",
+    post: (o: Object) => control.simmessages.send(channel.s, Buffer.fromUTF8(JSON.stringify(o)))
+}
+const castles = [
     sprites.castle.tilePath1,
     sprites.castle.tilePath2,
     sprites.castle.tilePath3,
@@ -16,6 +20,10 @@ const hero = {
     col: 0,
     row: 0,
     frame: 0,
+    durations: {
+        gait: 100,
+        move: 1000
+    },
     sprite: null as Sprite,
     sprites: [
         img`
@@ -239,6 +247,13 @@ const hero = {
 const snake = {
     col: 0,
     row: 0,
+    durations: {
+        gait: 100,
+        move: 1000,
+        rest: 200,
+        bite: 200,
+        bites: 30000
+    },
     sprite: null as Sprite,
     sprites: [
         img`
@@ -394,65 +409,9 @@ const treasure = {
         `
     ]
 }
-const channel = {
-    s: "theseus",
-    post: (o: Object) => control.simmessages.send(channel.s, Buffer.fromUTF8(JSON.stringify(o)))
-}
-interface StringToAny {
-    [key: string]: any
-}
-interface Tile {
-    col: number,
-    row: number,
-    castle: number
-}
-const cmds: StringToAny = {
-    splash: (s: string) => {
-        game.splash(s)
-    },
-    setScene: (args: any) => {
-        tiles.setTilemap(tilemap`template`)
-        for (const tile of args.tiles as Tile[]) {
-            tiles.setTileAt(tiles.getTileLocation(tile.col, tile.row), castles[tile.castle])
-        }
-        hero.col = args.hero.col
-        hero.row = args.hero.row
-        snake.col = args.snake.col
-        snake.row = args.snake.row
-        treasure.col = args.treasure.col
-        treasure.row = args.treasure.row
-        const u = scene.screenWidth() / 10
-        hero.sprite.setPosition((hero.col + 0.5) * u, (hero.row + 0.5) * u)
-        snake.sprite.setPosition((snake.col + 0.5) * u, (snake.row + 0.5) * u)
-        treasure.sprite.setPosition((treasure.col + 0.5) * u, (treasure.row + 0.5) * u)
-    }
-}
-control.simmessages.onReceived(channel.s, (buffer: Buffer) => {
-    const o = JSON.parse(buffer.toString())
-    const cmd = cmds[o.cmd]
-    if (cmd) {
-        cmd(o.args)
-    }
-})
 treasure.sprite = sprites.create(treasure.sprites[0])
 hero.sprite = sprites.create(hero.sprites[0])
 snake.sprite = sprites.create(snake.sprites[0])
-cmds.setScene({
-    tiles: [],
-    walls: [],
-    hero: {
-        col: 5,
-        row: 0
-    },
-    snake: {
-        col: 0,
-        row: 1
-    },
-    treasure: {
-        col: 1,
-        row: 0
-    }
-})
 const state = {
     n: 0,
     hero: null as any,
@@ -481,7 +440,7 @@ game.onUpdateInterval(30, function () {
     }
     if (state.n == 1) {
         const frames = [0, 1, 0, 2]
-        hero.sprite.setImage(hero.sprites[hero.frame + frames[Math.floor(state.progress / 100) % 4]])
+        hero.sprite.setImage(hero.sprites[hero.frame + frames[Math.floor(state.progress / hero.durations.gait) % 4]])
         hero.sprite.setPosition((f(state.hero.col, hero.col) + 0.5) * u, (f(state.hero.row, hero.row) + 0.5) * u)
         if (state.progress == state.duration) {
             hero.sprite.setImage(hero.sprites[hero.frame])
@@ -492,7 +451,7 @@ game.onUpdateInterval(30, function () {
             col: snake.col,
             row: snake.row
         }
-        state.duration = 1000
+        state.duration = snake.durations.move
         state.progress = 0
         const dc = d1(snake.col, hero.col)
         const dr = d1(snake.row, hero.row)
@@ -503,19 +462,19 @@ game.onUpdateInterval(30, function () {
             snake.row += dr
             state.n++
         } else {
-            state.duration = 60000
+            state.duration = snake.durations.bites
             state.progress = 0
             state.n = 9
         }
     } else if (state.n == 3 || state.n == 7) {
-        snake.sprite.setImage(snake.sprites[Math.floor(state.progress / 100) % 2])
+        snake.sprite.setImage(snake.sprites[Math.floor(state.progress / snake.durations.gait) % 2])
         snake.sprite.setPosition((f(state.snake.col, snake.col) + 0.5) * u, (f(state.snake.row, snake.row) + 0.5) * u)
         if (state.progress == state.duration) {
             snake.sprite.setImage(snake.sprites[0])
             state.n++
         }
     } else if (state.n == 4) {
-        state.duration = 200
+        state.duration = snake.durations.rest
         state.progress = 0
         state.n++
     } else if (state.n == 5) {
@@ -524,7 +483,7 @@ game.onUpdateInterval(30, function () {
         }
     } else if (state.n == 8) {
         if (snake.col == hero.col && snake.row == hero.row) {
-            state.duration = 60000
+            state.duration = snake.durations.move
             state.progress = 0
             state.n++
         } else {
@@ -532,16 +491,16 @@ game.onUpdateInterval(30, function () {
         }
     } else if (state.n == 9) {
         const frames = [2, 3, 3, 4, 5, 5, 5, 5]
-        snake.sprite.setImage(snake.sprites[frames[Math.floor(state.progress / 200) % 8]])
+        snake.sprite.setImage(snake.sprites[frames[Math.floor(state.progress / snake.durations.bite) % 8]])
     }
 })
 const move = (col: number, row: number, frame: number) => {
-    if (state.n == 0) { 
+    if (state.n == 0) {
         state.hero = {
             col: hero.col,
             row: hero.row
         }
-        state.duration = 1000
+        state.duration = hero.durations.move
         state.progress = 0
         state.runtime = game.runtime()
         state.n++
@@ -550,7 +509,7 @@ const move = (col: number, row: number, frame: number) => {
         hero.frame = frame
     }
 }
-controller.player1.onButtonEvent(ControllerButton.Down, ControllerButtonEvent.Pressed, function() {
+controller.player1.onButtonEvent(ControllerButton.Down, ControllerButtonEvent.Pressed, function () {
     move(0, 1, 0)
 })
 controller.player1.onButtonEvent(ControllerButton.Right, ControllerButtonEvent.Pressed, function () {
@@ -561,4 +520,69 @@ controller.player1.onButtonEvent(ControllerButton.Up, ControllerButtonEvent.Pres
 })
 controller.player1.onButtonEvent(ControllerButton.Left, ControllerButtonEvent.Pressed, function () {
     move(-1, 0, 9)
+})
+interface StringToAny {
+    [key: string]: any
+}
+interface Tile {
+    col: number,
+    row: number,
+    castle: number
+}
+const cmds: StringToAny = {
+    splash: (s: string) => {
+        game.splash(s)
+    },
+    setScene: (args: any) => {
+        tiles.setTilemap(tilemap`template`)
+        for (const tile of args.tiles as Tile[]) {
+            tiles.setTileAt(tiles.getTileLocation(tile.col, tile.row), castles[tile.castle])
+        }
+        hero.col = args.hero.col
+        hero.row = args.hero.row
+        hero.durations = args.hero.durations
+        snake.col = args.snake.col
+        snake.row = args.snake.row
+        snake.durations = args.snake.durations
+        treasure.col = args.treasure.col
+        treasure.row = args.treasure.row
+        const u = scene.screenWidth() / 10
+        hero.sprite.setPosition((hero.col + 0.5) * u, (hero.row + 0.5) * u)
+        snake.sprite.setPosition((snake.col + 0.5) * u, (snake.row + 0.5) * u)
+        treasure.sprite.setPosition((treasure.col + 0.5) * u, (treasure.row + 0.5) * u)
+    }
+}
+control.simmessages.onReceived(channel.s, (buffer: Buffer) => {
+    const o = JSON.parse(buffer.toString())
+    const cmd = cmds[o.cmd]
+    if (cmd) {
+        cmd(o.args)
+    }
+})
+cmds.setScene({
+    tiles: [],
+    walls: [],
+    hero: {
+        col: 5,
+        row: 0,
+        durations: {
+            gait: 100,
+            move: 1000
+        }
+    },
+    snake: {
+        col: 0,
+        row: 1,
+        durations: {
+            gait: 100,
+            move: 1000,
+            rest: 200,
+            bite: 200,
+            bites: 30000
+        }
+    },
+    treasure: {
+        col: 1,
+        row: 0
+    }
 })
